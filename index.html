@@ -159,6 +159,7 @@
                 map.removeLayer(currentPolygon)
             }
             currentPolygon = L.polygon(coordinates, { color: 'blue' }).addTo(map);
+            map.fitBounds(currentPolygon.getBounds(), {padding: [250, 250]});
         }
 
         async function handleCoords(e) {
