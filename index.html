@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moje Pole!</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
+    <style>
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        #map {
+            height: 70vh;
+            width: 100%;
+        }
+
+        #resultsDisplay {
+            width: 100%;
+            height: 30vh;
+            margin-top: 10px;
+            padding: 10px;
+            font-size: 14px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <pre id="resultsDisplay"></pre>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+    <script>
+        var polandRegionBounds = [
+            [48.5, 14.0],
+            [55.0, 24.5]
+        ];
+
+        var map = L.map('map', {
+            maxBounds: polandRegionBounds,
+            maxBoundsViscosity: 1.0
+        }).fitBounds(polandRegionBounds);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            bounds: polandRegionBounds,
+            noWrap: true,
+            maxZoom: 18,
+            minZoom: 6
+        }).addTo(map);
+
+        L.rectangle(polandRegionBounds, {
+            color: "#ff7800",
+            weight: 1,
+            fillOpacity: 0
+        }).addTo(map);
+
+        var currentPolygon = null;
+
+        function parseXML(xmlString) {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+            const layer = xmlDoc.querySelector("Layer");
+
+            if (!layer) {
+                return "No data found for this location.";
+            }
+
+            let result = "Parcel Information:\n\n";
+            const attributes = layer.querySelectorAll("Attribute");
+            attributes.forEach(attr => {
+                const name = attr.getAttribute("Name");
+                let value = attr.textContent.trim();
+
+                // Remove HTML tags for cleaner display
+                value = value.replace(/<\/?[^>]+(>|$)/g, "");
+
+                result += `${name}: ${value}\n`;
+            });
+
+            return result;
+        }
+
+        async function parseAndDrawPolygon(data) {
+        const lines = data.split("\n");
+        const firstLine = lines[0].trim();
+        const secondLine = lines[1].trim();
+
+        // Assert that the first line is '0'
+        if (firstLine !== '0') {
+            console.error("First line is not 0.");
+            return;
+        }
+
+        // Parse SRID and WKT polygon
+        const sridMatch = secondLine.match(/SRID=(\d+);POLYGON\(\((.*)\)\)/);
+        if (!sridMatch) {
+            console.error("Data format incorrect.");
+            return;
+        }
+
+        const srid = sridMatch[1]; // SRID value (e.g., 4326)
+        const polygonCoords = sridMatch[2]; // Polygon coordinates in WKT format
+
+        if (srid !== '4326') {
+            console.error("Only SRID=4326 (WGS84) is supported.");
+            return;
+        }
+
+        // Parse the coordinates (convert from string to an array of lat/lng pairs)
+        const coordinates = polygonCoords.split(',').map(coord => {
+            const [lng, lat] = coord.trim().split(' ').map(Number); // [longitude, latitude]
+            return [lat, lng]; // Leaflet expects [latitude, longitude]
+        });
+
+        // Add OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Draw the polygon
+        if (currentPolygon) {
+            map.removeLayer(currentPolygon)
+        }
+        currentPolygon = L.polygon(coordinates, { color: 'blue' }).addTo(map);
+    }
+
+        async function handleCoords(e) {
+            var lat = e.latlng.lat.toFixed(13);
+            var lng = e.latlng.lng.toFixed(12);
+            var apiUrl = `https://uldk.gugik.gov.pl/?request=GetParcelByXY&xy=${lng},${lat},4326&result=geom_wkt&crs=4326`
+            try {
+                const response = await fetch(apiUrl);
+                const polygon = await response.text();
+                await parseAndDrawPolygon(polygon);
+                await getDetails(e)
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('resultsDisplay').textContent = 'Error fetching data from API';
+            }
+        }
+
+        async function getDetails(e) {
+            var lat = e.latlng.lat.toFixed(13);
+            var lng = e.latlng.lng.toFixed(12);
+            var bbox = `${lat},${lng},${lat},${lng}`;
+            var apiUrl = `https://integracja.gugik.gov.pl/cgi-bin/KrajowaIntegracjaEwidencjiGruntow?SERVICE=WMS&request=GetFeatureInfo&version=1.3.0&layers=obreby,dzialki&styles=&crs=EPSG:4326&bbox=${bbox}&query_layers=dzialki,obreby`;
+
+            try {
+                const response = await fetch(apiUrl);
+                const text = await response.text();
+                console.log(text)
+                const parsedResult = parseXML(text);
+                document.getElementById('resultsDisplay').textContent = parsedResult;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('resultsDisplay').textContent = 'Error fetching data from API';
+            }
+        }
+
+        map.on('click', handleCoords);
+    </script>
+</body>
+
+</html>
