@@ -24,7 +24,7 @@
             width: 100%;
             height: 30vh;
             margin-top: 10px;
-            margin-left: 10%;
+            margin-left: 5%;
             padding: 10px;
             font-size: 14px;
             box-sizing: border-box;
@@ -38,7 +38,7 @@
 
 <body>
     <div id="map"></div>
-    <pre id="resultsDisplay">No witam. Kliknij na wybrany obszar mapy, aby zaznaczyć działkę i poznać jej szczegóły.</pre>
+    <pre id="resultsDisplay">Witam. Kliknij na wybrany obszar mapy, aby zaznaczyć działkę i poznać jej szczegóły.</pre>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
     <script src="https://unpkg.com/@turf/turf/turf.min.js"></script>
@@ -159,7 +159,12 @@
                 map.removeLayer(currentPolygon)
             }
             currentPolygon = L.polygon(coordinates, { color: 'blue' }).addTo(map);
-            map.fitBounds(currentPolygon.getBounds(), {padding: [250, 250]});
+
+            const bounds = currentPolygon.getBounds();
+            map.flyTo(bounds.getCenter(), map.getBoundsZoom(bounds)*0.95, {
+                animate: true,
+                easeLinearity: 0.5
+            });
         }
 
         async function handleCoords(e) {
