@@ -23,7 +23,7 @@
         #resultsDisplay {
             width: 100%;
             height: 30vh;
-            margin-top: 10px;
+            margin-top: 5px;
             margin-left: 5%;
             padding: 10px;
             font-size: 14px;
@@ -33,11 +33,29 @@
             word-wrap: break-word;
             text-align: left;
         }
+
+        #header {
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        #dropdown {
+            width: 20%;
+        }
     </style>
 </head>
 
 <body>
     <div id="map"></div>
+    <div id="header">
+        <h3>Moje Pole</h3>
+        <p>Kliknij na wybrany obszar mapy, aby zaznaczyć działkę i poznać jej szczegóły.</p>
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Wpisz miasto, ulicę...">
+            <select id="dropdown"></select>
+        </div>
+    </div>
     <pre id="resultsDisplay">Witaj na portalu Moje Pole. Kliknij na wybrany obszar mapy, aby zaznaczyć działkę i poznać jej szczegóły.</pre>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
@@ -221,6 +239,79 @@
                 document.getElementById('resultsDisplay').textContent = errMsg;
             }
         }
+
+        let debounceTimer;
+        let featuresData = [];
+
+        function debounce(func, delay) {
+            return function() {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => func.apply(this, arguments), delay);
+            }
+        }
+
+        function search() {
+            const query = document.getElementById('searchInput').value;
+            if (query.length < 3) {
+                document.getElementById('dropdown').style.display = 'none';
+                return;
+            }
+            fetch(`https://capap.gugik.gov.pl/api/fts/ref/qq/?f=geojson&q=${query}&offs=0&cnt=10`)
+                .then(response => response.json())
+                .then(data => {
+                    featuresData = data.features;
+                    displayResults(featuresData);
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function displayResults(features) {
+            const dropdown = document.getElementById('dropdown');
+            if (features.length > 0) {
+                features.forEach((feature, index) => {
+                    if (!feature.properties.miejsc_nazwa || !feature.properties.ul_nazwa_glowna) {
+                        return;
+                    }
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = `${feature.properties.miejsc_nazwa} - ${feature.properties.ul_nazwa_glowna}`;
+                    dropdown.appendChild(option);
+                });
+            }
+        }
+
+        function focusMap(index) {
+            const feature = featuresData[index];
+            let coordinates = feature.geometry.coordinates;
+            while (Array.isArray(coordinates[0])) {
+                coordinates = coordinates[0];
+            }
+            const lat = coordinates[1];
+            const lon = coordinates[0];
+            map.setView([lat, lon], 15);
+            map.eachLayer((layer) => {
+                if (layer instanceof L.Marker) {
+                    map.removeLayer(layer);
+                }
+            });
+            L.marker([lat, lon]).addTo(map);
+        }
+
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', debounce(search, 300));
+        searchInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                search();
+            }
+        });
+
+        const dropdown = document.getElementById('dropdown');
+        dropdown.addEventListener('change', function() {
+            if (this.value !== '') {
+                focusMap(parseInt(this.value));
+            }
+        });
 
         map.on('click', handleCoords);
 
