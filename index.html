@@ -327,11 +327,22 @@
             border: 2px solid var(--border-brown);
         }
 
+        /* Desktop/Mobile visibility classes */
+        .desktop-only {
+            display: block;
+        }
+        
+        .mobile-only {
+            display: none;
+        }
+
         /* Responsive design */
         @media (max-width: 768px) {
             .main-container {
                 flex-direction: column;
                 padding-top: 120px;
+                height: auto;
+                min-height: 100vh;
             }
             
             .left-panel {
@@ -339,15 +350,17 @@
                 margin-top: 0;
                 position: relative;
                 height: auto;
-                min-height: 200px;
+                min-height: 80px;
                 order: 1;
+                flex-shrink: 0;
             }
             
             .map-container {
                 margin-top: 0;
-                flex: 1;
-                height: 60vh;
+                flex: none;
+                height: calc(60vh - 60px);
                 order: 2;
+                min-height: 350px;
             }
             
             .header-title {
@@ -360,6 +373,24 @@
             
             .info-panel {
                 margin-bottom: 10px;
+                max-height: none;
+                overflow-y: visible;
+                order: 3;
+            }
+            
+            .panel-section {
+                margin-bottom: 10px;
+            }
+            
+            /* Show/hide panels for mobile */
+            .desktop-only {
+                display: none;
+            }
+            
+            .mobile-only {
+                display: block;
+                width: 100%;
+                margin: 20px 0;
             }
         }
 
@@ -448,8 +479,8 @@
                 <div class="decorative-corner bottom-right"></div>
             </div>
 
-            <!-- Information Panel -->
-            <div class="info-panel">
+            <!-- Information Panel (desktop only) -->
+            <div class="info-panel desktop-only">
                 <div class="decorative-corner top-left"></div>
                 <div class="decorative-corner top-right"></div>
                 <h4 id="info-title">Kronika Ziem</h4>
@@ -471,6 +502,22 @@
                 <div class="spinner"></div>
             </div>
             <div id="map"></div>
+        </div>
+
+        <!-- Information Panel (mobile only) -->
+        <div class="info-panel mobile-only">
+            <div class="decorative-corner top-left"></div>
+            <div class="decorative-corner top-right"></div>
+            <h4 id="info-title-mobile">Kronika Ziem</h4>
+            <div id="resultsDisplayMobile">
+                Witaj w Polonia Geoportalis, królewskim portalu ziemskim.
+                
+                Kliknij na wybrany obszar mapy, aby odkryć szczegóły działki i poznać historię tych ziem.
+                
+                Niech wiedza o naszych ziemiach służy dobru Królestwa!
+            </div>
+            <div class="decorative-corner bottom-left"></div>
+            <div class="decorative-corner bottom-right"></div>
         </div>
     </div>
 
@@ -548,8 +595,10 @@
             document.getElementById('header-subtitle').textContent = msg.subtitle;
             document.getElementById('search-title').textContent = msg.search;
             document.getElementById('info-title').textContent = msg.title;
+            document.getElementById('info-title-mobile').textContent = msg.title;
             document.getElementById('searchInput').placeholder = msg.placeholder;
             document.getElementById('resultsDisplay').textContent = msg.welcome;
+            document.getElementById('resultsDisplayMobile').textContent = msg.welcome;
         }
 
         // Show loading spinner
@@ -698,6 +747,7 @@
             } catch (error) {
                 console.error('Error:', error);
                 document.getElementById('resultsDisplay').textContent = errMsg[currentLanguage];
+                document.getElementById('resultsDisplayMobile').textContent = errMsg[currentLanguage];
             } finally {
                 hideLoading();
             }
@@ -715,6 +765,7 @@
             } catch (error) {
                 console.error('Error:', error);
                 document.getElementById('resultsDisplay').textContent = errMsg[currentLanguage];
+                document.getElementById('resultsDisplayMobile').textContent = errMsg[currentLanguage];
             } finally {
                 hideLoading();
             }
@@ -729,9 +780,11 @@
                 const text = await response.text();
                 const parsedResult = parseXML(text);
                 document.getElementById('resultsDisplay').innerHTML = parsedResult;
+                document.getElementById('resultsDisplayMobile').innerHTML = parsedResult;
             } catch (error) {
                 console.error('Error:', error);
                 document.getElementById('resultsDisplay').textContent = errMsg[currentLanguage];
+                document.getElementById('resultsDisplayMobile').textContent = errMsg[currentLanguage];
             }
         }
 
