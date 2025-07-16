@@ -1,68 +1,233 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moje Pole!</title>
+    <title>Polonia Geoportalis - Królestwo Polskie</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body,
-        html {
-            height: 100%;
+        /* Medieval Europa Universalis Theme */
+        :root {
+            --primary-gold: #c5a572;
+            --dark-gold: #8b7355;
+            --burgundy: #722f37;
+            --dark-burgundy: #5a242a;
+            --parchment: #f4e8d0;
+            --dark-parchment: #d4c5a0;
+            --border-brown: #8B4513;
+            --text-dark: #2c1810;
+            --text-light: #f4e8d0;
+            --shadow: rgba(0, 0, 0, 0.5);
+        }
+
+        * {
             margin: 0;
             padding: 0;
-            font-family: Arial, sans-serif;
-        }
-
-        #map {
-            height: 65vh;
-            width: 100%;
-        }
-
-        #resultsDisplay {
-            width: 100%;
-            height: 30vh;
-            margin-top: 5px;
-            margin-left: 5%;
-            padding: 10px;
-            font-size: 14px;
             box-sizing: border-box;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            text-align: left;
         }
 
-        #header {
+        body, html {
+            height: 100%;
+            font-family: 'Cinzel', serif;
+            background: linear-gradient(135deg, var(--burgundy) 0%, var(--dark-burgundy) 100%);
+            color: var(--text-light);
+            overflow-x: hidden;
+        }
+
+        /* Background texture */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="0.3" fill="rgba(255,255,255,0.05)"/><circle cx="40" cy="80" r="0.4" fill="rgba(255,255,255,0.08)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>') repeat;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        /* Main Container */
+        .main-container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Header Banner */
+        .header-banner {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            background-color: rgba(255, 255, 255, 0.8);
-            padding: 10px;
+            background: linear-gradient(90deg, var(--primary-gold) 0%, var(--dark-gold) 50%, var(--primary-gold) 100%);
+            border-bottom: 4px solid var(--border-brown);
+            box-shadow: 0 4px 8px var(--shadow);
             z-index: 1000;
+            padding: 15px 20px;
             text-align: center;
         }
 
-        #dropdown {
-            width: 20%;
+        .header-banner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+        }
+
+        .header-title {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            text-shadow: 2px 2px 4px var(--shadow);
+            margin-bottom: 5px;
+        }
+
+        .header-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-dark);
+            font-weight: 500;
+            opacity: 0.9;
+        }
+
+        /* Left Panel */
+        .left-panel {
+            width: 350px;
+            background: linear-gradient(180deg, var(--parchment) 0%, var(--dark-parchment) 100%);
+            border-right: 4px solid var(--border-brown);
+            box-shadow: 4px 0 8px var(--shadow);
+            padding: 20px;
+            margin-top: 120px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .left-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="parchment" width="50" height="50" patternUnits="userSpaceOnUse"><rect width="50" height="50" fill="none"/><path d="M10,10 Q15,5 20,10 T30,10" stroke="rgba(139,69,19,0.1)" stroke-width="0.5" fill="none"/></pattern></defs><rect width="100" height="100" fill="url(%23parchment)"/></svg>') repeat;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        .panel-section {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid var(--border-brown);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: var(--text-dark);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .panel-section h3 {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 1.3rem;
+            color: var(--burgundy);
+            margin-bottom: 10px;
+            text-align: center;
+            border-bottom: 2px solid var(--border-brown);
+            padding-bottom: 8px;
+        }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--border-brown);
+            border-radius: 6px;
+            font-family: 'Cinzel', serif;
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--text-dark);
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary-gold);
+            box-shadow: 0 0 8px rgba(197, 165, 114, 0.5);
+        }
+
+        .search-hints {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid var(--border-brown);
+            border-radius: 6px;
+            border-top: none;
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 8px var(--shadow);
+        }
+
+        .search-hint {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--dark-parchment);
+            font-family: 'Cinzel', serif;
+            color: var(--text-dark);
+            transition: background-color 0.2s ease;
+        }
+
+        .search-hint:last-child {
+            border-bottom: none;
+        }
+
+        .search-hint:hover,
+        .search-hint.selected {
+            background: var(--dark-parchment);
+            color: var(--burgundy);
+        }
+
+        .search-hint.selected {
+            background: var(--primary-gold);
+            color: var(--text-dark);
+            font-weight: 600;
         }
 
         .language-switch {
-            position: fixed;
-            top: 10px;
-            right: 10px;
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
             z-index: 1001;
         }
 
         .flag-button {
-            width: 30px;
-            height: 20px;
-            margin-left: 5px;
+            width: 40px;
+            height: 28px;
+            border: 2px solid var(--border-brown);
+            border-radius: 4px;
             cursor: pointer;
-            border: none;
             background-size: cover;
+            background-position: center;
+            transition: transform 0.2s ease;
+            box-shadow: 0 2px 4px var(--shadow);
+        }
+
+        .flag-button:hover {
+            transform: scale(1.1);
         }
 
         .flag-pl {
@@ -70,87 +235,332 @@
         }
 
         .flag-en {
-            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAUCAYAAACaq43EAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyRpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMy1jMDExIDY2LjE0NTY2MSwgMjAxMi8wMi8wNi0xNDo1NjoyNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNiAoTWFjaW50b3NoKSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDpBMjExNEYyMDE3OEExMUUyQTcxNDlDNEFCRkNENzc2NiIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDpBMjExNEYyMTE3OEExMUUyQTcxNDlDNEFCRkNENzc2NiI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkEyMTE0RjFFMTc4QTExRTJBNzE0OUM0QUJGQ0Q3NzY2IiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOkEyMTE0RjFGMTc4QTExRTJBNzE0OUM0QUJGQ0Q3NzY2Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+EXnauAAABW1JREFUeNrEVm1QVGUUfu7dXZBYvuRj1yATNT5FxCClTNLUFNBJrfxRZjOKkVLqGA2okGGDhA44ToqT1pigA9qAhkho4kiCqRhgCKwBg5IiLCDs8rEid0/vvVfWGD/K/nR27u7Ofc85z/Oe9znnXi52S4Eh49sy9DS1AE6OgJsdYDYDhOFWr8fi+Ej8kByBuoDX0FOtA6dUwVrrignNlxG1vQT7Yg8B492Gx3HsUvBAmxHoNEAdFoyYqDAoUzeF2322djbS0k9h53el6NXdAEY6Aa6PIfBvTQTkGaBeBOxmgCFYFz0Dy5z0GJe7FbzxdAlc1CokJ4SjoSoRsQkLoXawAXTNLKhHZss9JaAY085idbdgN9EbcQfWo2JTIJLOpoCbOw0VR8+BvzUrDFe8X4Th5Blo7K2RmjQfjZWJiE9aBHtnW5lAe69IH9wTCMhrDLCD+epuwiHIFwmHGGCcH5LPpYCfHYrKY2VwPJyHoNYGoKXwNAlvRVItK2qVTzAZi0toyNqNAxT7eT6px2xkBQ+nsI+OSPdrJ4TRJWipXPkc/e4xWbq3OKGI+USSOmwPxX1fQ01nLhB9+AHVs7y/uXpSR3auJa+JXYB/Gi1LKaXiXTlUExRKvzDHinGB1L430+LYqjfS8k8yacmmEyQMCg8BCwN3KSqthN5dtZ+u7s4iYekS+kPMM8qL2nPyLHkq6jto6apDBJuPCVOXHSSvyH0UnVVPOrbYf7Gc6uYtpLqIt6kzt4AeZdV+IrCGyhUeVOkeRGbpw6zpGvVGR1PtjHl0p/DnYTFX20y08ouT5D13D730/kHiSNo2s/4+GE1m2DmpLec2qO8Ap1KxtlGAFwWj4iEYTagJjcTdaw1SOyldRsL31+Ow0joDBna+Ls6WeBIEUL9J+t9nuge1rTVgYyNromb8VBqSI+MNQSBwCgXTCSe3khhMw3vK3Nsnt9p9VfG2z7Af5q9UyqoW/QeFYZ2oUDA/jsdQfyp7G5ufukWVjg7si5dzMJB7f7Y8RO6fjMf/ZEqbMR4PGpGxFszDmXPi9JGalKTyihuTSi08KLXKYxT+3uTc0NSCnJNYHM+OjruPIflYxMUSm7qMsGJCkhZUSnDW1g8YiGAsl8BEUsvEZRoSlysTV1k+E5eLRMZsloFEwrza1hJ+19gHazsrca/yjhfFF+B2UycCfLWIWfkqArQjLM791XW4uXUbnNlIdYpbC3j6QGEjKYXxNMsCEzU1ij0YrKyGnV33ybPQ7z8gbg2jN3wKvb8f0nOv43xeKVw1avB5KbkYYerFmzPHW0CNpRdRHTwDTQG+eL6tAb0+gVifcRkrvipmIjdLupIQWekUolJZ0dZ8XYaYuBx0G+X2cZg1BXYhITCeKcWlCf4whM7E67fK4f6CB37MY3OyubXH0uTGkjK6Mmka1bBUg/PfoJajJyg9V0djlxxmx7GQQpdnP3ZkLogvZD7zyNk7kRKTC6mzX7Dk7TpeRJWeE6VpZn7vHbp+oph4Dzdb9F24jOrJ03F9+svwfXYE3PILsSc6A1Myu7Bu0Q405rNBCi3cNXaPValGfKBgDDpuG5C04TDGTtyML7efgmGA4BAxB4GNVXA5Voiqs9Uwhc8ELwI2TQ2G32hbaAqKsGvFboRkGRATsQ03fjoPeLkC7k6S+J7Uq/IaO3M3e8B7NLraepAQmw3PgM1gFUD3gBmOC+Zi0o2r0OQXQemjscKd3HxkWPkjPfMSGrLT2FhTyYBSrqd8ExAJsOknvclo7NHZasCWjUew+8AFrF3xCtasmQ2HyDlQ7lr9jXFnVjkac1IZIJO6l9t/A3wUAbpPQGuPjpZuqQI79p7D6qhp+EuAAQB9e+n65ZcRTgAAAABJRU5ErkJggg==');
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 30"><clipPath id="t"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath><path d="M0,0 v30 h60 v-30 z" fill="%23012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="%23fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(%23t)" stroke="%23C8102E" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="%23fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="%23C8102E" stroke-width="6"/></svg>');
         }
 
-        h3 {
-            margin: 0;
-            padding: 0;
+        /* Map Container */
+        .map-container {
+            flex: 1;
+            position: relative;
+            margin-top: 120px;
         }
 
-</style>
+        #map {
+            height: 100%;
+            width: 100%;
+            border-left: 4px solid var(--border-brown);
+        }
+
+        /* Information Panel */
+        .info-panel {
+            background: linear-gradient(135deg, var(--parchment) 0%, var(--dark-parchment) 100%);
+            border: 3px solid var(--border-brown);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 6px 12px var(--shadow);
+            color: var(--text-dark);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .info-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="scroll" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="none"/><circle cx="5" cy="5" r="0.5" fill="rgba(139,69,19,0.1)"/><circle cx="15" cy="15" r="0.3" fill="rgba(139,69,19,0.08)"/></pattern></defs><rect width="100" height="100" fill="url(%23scroll)"/></svg>') repeat;
+            z-index: -1;
+            opacity: 0.2;
+        }
+
+        .info-panel h4 {
+            font-family: 'Cinzel Decorative', serif;
+            color: var(--burgundy);
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            text-align: center;
+            border-bottom: 2px solid var(--border-brown);
+            padding-bottom: 8px;
+        }
+
+        /* Custom Scrollbar */
+        .left-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .left-panel::-webkit-scrollbar-track {
+            background: var(--dark-parchment);
+            border-radius: 4px;
+        }
+
+        .left-panel::-webkit-scrollbar-thumb {
+            background: var(--border-brown);
+            border-radius: 4px;
+        }
+
+        .left-panel::-webkit-scrollbar-thumb:hover {
+            background: var(--burgundy);
+        }
+
+        /* Leaflet popup styling */
+        .leaflet-popup-content-wrapper {
+            background: var(--parchment);
+            border: 2px solid var(--border-brown);
+            border-radius: 8px;
+            box-shadow: 0 4px 8px var(--shadow);
+        }
+
+        .leaflet-popup-content {
+            font-family: 'Cinzel', serif;
+            color: var(--text-dark);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .leaflet-popup-tip {
+            background: var(--parchment);
+            border: 2px solid var(--border-brown);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .left-panel {
+                width: 100%;
+                height: 40vh;
+                margin-top: 0;
+            }
+            
+            .map-container {
+                margin-top: 0;
+            }
+            
+            .header-title {
+                font-size: 1.8rem;
+            }
+            
+            .header-subtitle {
+                font-size: 1rem;
+            }
+        }
+
+        /* Loading animation */
+        .loading-spinner {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--dark-parchment);
+            border-top: 4px solid var(--primary-gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Decorative elements */
+        .decorative-corner {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: var(--primary-gold);
+            border: 2px solid var(--border-brown);
+            transform: rotate(45deg);
+        }
+
+        .decorative-corner.top-left {
+            top: -15px;
+            left: -15px;
+        }
+
+        .decorative-corner.top-right {
+            top: -15px;
+            right: -15px;
+        }
+
+        .decorative-corner.bottom-left {
+            bottom: -15px;
+            left: -15px;
+        }
+
+        .decorative-corner.bottom-right {
+            bottom: -15px;
+            right: -15px;
+        }
+    </style>
 </head>
-
 <body>
-    <div id="header">
-        <h3>Moje Pole!</h3>
-        <p id="header-description">Kliknij na wybrany obszar mapy, aby zaznaczyć działkę i poznać jej szczegóły.</p>
-        <div class="search-container">
-            <input type="text" id="searchInput" placeholder="Wpisz miasto, ulicę...">
-            <select id="dropdown"></select>
+    <!-- Header Banner -->
+    <div class="header-banner">
+        <div class="header-title">Polonia Geoportalis</div>
+        <div class="header-subtitle" id="header-subtitle">
+            Odkryj tajemnice ziem Królestwa Polskiego
+        </div>
+        <div class="language-switch">
+            <button class="flag-button flag-pl" onclick="switchLanguage('pl')" title="Polski"></button>
+            <button class="flag-button flag-en" onclick="switchLanguage('en')" title="English"></button>
         </div>
     </div>
-    <div class="language-switch">
-        <button class="flag-button flag-pl" onclick="switchLanguage('pl')"></button>
-        <button class="flag-button flag-en" onclick="switchLanguage('en')"></button>
-    </div>
-    <div id="map"></div>
-    <pre id="resultsDisplay">Witaj na portalu Moje Pole. Kliknij na wybrany obszar mapy, aby zaznaczyć działkę i poznać jej szczegóły.</pre>
 
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Left Panel -->
+        <div class="left-panel">
+            <!-- Search Section -->
+            <div class="panel-section">
+                <div class="decorative-corner top-left"></div>
+                <div class="decorative-corner top-right"></div>
+                <h3 id="search-title">Poszukiwanie Lokacji</h3>
+                <div class="search-container">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Wpisz miasto, ulicę...">
+                    <div id="searchHints" class="search-hints"></div>
+                </div>
+                <div class="decorative-corner bottom-left"></div>
+                <div class="decorative-corner bottom-right"></div>
+            </div>
+
+            <!-- Information Panel -->
+            <div class="info-panel">
+                <div class="decorative-corner top-left"></div>
+                <div class="decorative-corner top-right"></div>
+                <h4 id="info-title">Kronika Ziem</h4>
+                <div id="resultsDisplay">
+                    Witaj w Polonia Geoportalis, królewskim portalu ziemskim.
+                    
+                    Kliknij na wybrany obszar mapy, aby odkryć szczegóły działki i poznać historię tych ziem.
+                    
+                    Niech wiedza o naszych ziemiach służy dobru Królestwa!
+                </div>
+                <div class="decorative-corner bottom-left"></div>
+                <div class="decorative-corner bottom-right"></div>
+            </div>
+        </div>
+
+        <!-- Map Container -->
+        <div class="map-container">
+            <div class="loading-spinner" id="loadingSpinner">
+                <div class="spinner"></div>
+            </div>
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
     <script src="https://unpkg.com/@turf/turf/turf.min.js"></script>
     <script>
+        // Medieval-themed map configuration
         var polandRegionBounds = [
             [48.5, 14.0],
             [55.0, 24.5]
         ];
 
+        // Initialize map with medieval styling
         var map = L.map('map', {
             maxBounds: polandRegionBounds,
-            maxBoundsViscosity: 1.0
+            maxBoundsViscosity: 1.0,
+            zoomControl: false
         }).fitBounds(polandRegionBounds);
 
+        // Add custom zoom control
+        L.control.zoom({
+            position: 'bottomright'
+        }).addTo(map);
+
+        // Medieval-style tile layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Polonia Geoportalis',
             bounds: polandRegionBounds,
             noWrap: true,
             maxZoom: 18,
-            minZoom: 6
+            minZoom: 6,
+            className: 'medieval-tiles'
         }).addTo(map);
 
+        // Add kingdom border
         L.rectangle(polandRegionBounds, {
-            color: "#ff7800",
-            weight: 1,
-            fillOpacity: 0
+            color: "#c5a572",
+            weight: 3,
+            fillOpacity: 0,
+            dashArray: '10, 5'
         }).addTo(map);
 
+        // Language and error handling
         const errMsg = {
-            pl: 'Coś nie poszło. Spróbuj ponownie!',
-            en: 'Something went wrong. Please try again!'
+            pl: 'Niestety, nie udało się pozyskać informacji o tej lokacji. Spróbuj ponownie!',
+            en: 'Unfortunately, information about this location could not be retrieved. Please try again!'
         };
+
+        const welcomeMsg = {
+            pl: {
+                title: 'Kronika Ziem',
+                subtitle: 'Odkryj tajemnice ziem Królestwa Polskiego',
+                search: 'Poszukiwanie Lokacji',
+                placeholder: 'Wpisz miasto, ulicę...',
+                welcome: 'Witaj w Polonia Geoportalis, królewskim portalu ziemskim.\n\nKliknij na wybrany obszar mapy, aby odkryć szczegóły działki i poznać historię tych ziem.\n\nNiech wiedza o naszych ziemiach służy dobru Królestwa!'
+            },
+            en: {
+                title: 'Chronicle of Lands',
+                subtitle: 'Discover the secrets of the Polish Kingdom lands',
+                search: 'Location Search',
+                placeholder: 'Enter city, street...',
+                welcome: 'Welcome to Polonia Geoportalis, the royal land portal.\n\nClick on the selected area of the map to discover plot details and learn the history of these lands.\n\nMay the knowledge of our lands serve the good of the Kingdom!'
+            }
+        };
+
         var currentPolygon = null;
         var currentLanguage = 'pl';
 
+        // Language switching function
         function switchLanguage(lang) {
             currentLanguage = lang;
-            document.getElementById('header-description').textContent = lang === 'pl' 
-                ? 'Kliknij na wybrany obszar mapy, aby zaznaczyć działkę i poznać jej szczegóły.'
-                : 'Click on the selected area of the map to show its details.';
-            document.getElementById('searchInput').placeholder = lang === 'pl' 
-                ? 'Wpisz miasto, ulicę...'
-                : 'Enter city, street...';
-            document.getElementById('resultsDisplay').textContent = lang === 'pl'
-                ? 'Witaj na portalu Moje Pole. Kliknij na wybrany obszar mapy, aby zaznaczyć działkę i poznać jej szczegóły.'
-                : 'Welcome to Moje Pole portal. Click on the selected area of the map to show its details.';
+            const msg = welcomeMsg[lang];
+            
+            document.getElementById('header-subtitle').textContent = msg.subtitle;
+            document.getElementById('search-title').textContent = msg.search;
+            document.getElementById('info-title').textContent = msg.title;
+            document.getElementById('searchInput').placeholder = msg.placeholder;
+            document.getElementById('resultsDisplay').textContent = msg.welcome;
         }
 
+        // Show loading spinner
+        function showLoading() {
+            document.getElementById('loadingSpinner').style.display = 'block';
+        }
+
+        // Hide loading spinner
+        function hideLoading() {
+            document.getElementById('loadingSpinner').style.display = 'none';
+        }
+
+        // XML parsing function with medieval styling
         function parseXML(xmlString) {
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(xmlString, "text/xml");
             const layer = xmlDoc.querySelector("Layer");
 
             if (!layer) {
-                return currentLanguage === 'pl' ? "Nie znaleziono danych dla tej lokalizacji." : "No data found for this location.";
+                return currentLanguage === 'pl' 
+                    ? "Nie znaleziono zapisów o tej lokalizacji w kronikach królewskich." 
+                    : "No records found for this location in the royal chronicles.";
             }
 
             let result = "";
@@ -158,24 +568,24 @@
 
             let translations = {
                 pl: {
-                    "Identyfikator działki": "Identyfikator działki",
-                    "Numer działki": "Numer działki",
-                    "Pole pow. w ewidencji gruntów (ha)": "Pole pow. w ewidencji gruntów (ha)",
-                    "Oznaczenie użytku": "Oznaczenie użytku",
-                    "Oznaczenie konturu": "Oznaczenie konturu",
-                    "Województwo": "Województwo",
-                    "Powiat": "Powiat",
-                    "Gmina": "Gmina"
+                    "Identyfikator działki": "📜 Identyfikator działki",
+                    "Numer działki": "🏰 Numer działki",
+                    "Pole pow. w ewidencji gruntów (ha)": "📏 Powierzchnia (ha)",
+                    "Oznaczenie użytku": "🌾 Rodzaj użytkowania",
+                    "Oznaczenie konturu": "🗺️ Oznaczenie konturu",
+                    "Województwo": "👑 Województwo",
+                    "Powiat": "🏛️ Powiat",
+                    "Gmina": "🏘️ Gmina"
                 },
                 en: {
-                    "Identyfikator działki": "Plot identifier",
-                    "Numer działki": "Plot number",
-                    "Pole pow. w ewidencji gruntów (ha)": "Area in land records (ha)",
-                    "Oznaczenie użytku": "Land use designation",
-                    "Oznaczenie konturu": "Contour designation",
-                    "Województwo": "Voivodeship",
-                    "Powiat": "County",
-                    "Gmina": "Commune"
+                    "Identyfikator działki": "📜 Plot identifier",
+                    "Numer działki": "🏰 Plot number",
+                    "Pole pow. w ewidencji gruntów (ha)": "📏 Area (ha)",
+                    "Oznaczenie użytku": "🌾 Land use type",
+                    "Oznaczenie konturu": "🗺️ Contour designation",
+                    "Województwo": "👑 Voivodeship",
+                    "Powiat": "🏛️ County",
+                    "Gmina": "🏘️ Commune"
                 }
             };
 
@@ -192,8 +602,8 @@
                     var polygon = turf.polygon([coords.map(c => [c[1], c[0]])]);
                     var polygonArea = turf.area(polygon);
                     value = currentLanguage === 'pl' 
-                        ? "(w przybliżeniu) " + (polygonArea / 10000).toFixed(2)
-                        : "(approximately) " + (polygonArea / 10000).toFixed(2);
+                        ? "(szacunkowo) " + (polygonArea / 10000).toFixed(2)
+                        : "(estimated) " + (polygonArea / 10000).toFixed(2);
                 }
 
                 value = value.replace(/<\/?[^>]+(>|$)/g, "");
@@ -202,95 +612,100 @@
                     window.history.pushState({}, null, `?id=${value}&lang=${currentLanguage}`);
                     value = `<a href="index.html?id=${value}&lang=${currentLanguage}" target="_blank">${value}</a>`;
                 }
-                result += `${translations[currentLanguage][name]}: ${value}\n`;
+                result += `${translations[currentLanguage][name]}: ${value}<br>`;
             });
 
             return result;
         }
 
-
+        // Parse and draw polygon with medieval styling
         async function parseAndDrawPolygon(data, goFast) {
             const lines = data.split("\n");
             const firstLine = lines[0].trim();
             const secondLine = lines[1].trim();
 
-            // Assert that the first line is '0'
             if (firstLine !== '0' && firstLine !== '1') {
                 console.error("First line is not valid.");
                 return;
             }
 
-            // Parse SRID and WKT polygon
             const sridMatch = secondLine.match(/SRID=(\d+);POLYGON\(\((.*)\)\)/);
             if (!sridMatch) {
                 console.error("Data format incorrect.");
                 return;
             }
 
-            const srid = sridMatch[1]; // SRID value (e.g., 4326)
-            const polygonCoords = sridMatch[2]; // Polygon coordinates in WKT format
+            const srid = sridMatch[1];
+            const polygonCoords = sridMatch[2];
 
             if (srid !== '4326') {
                 console.error("Only SRID=4326 (WGS84) is supported.");
                 return;
             }
 
-            // Parse the coordinates (convert from string to an array of lat/lng pairs)
             const coordinates = polygonCoords.split(',').map(coord => {
-                const [lng, lat] = coord.trim().split(' ').map(Number); // [longitude, latitude]
-                return [lat, lng]; // Leaflet expects [latitude, longitude]
+                const [lng, lat] = coord.trim().split(' ').map(Number);
+                return [lat, lng];
             });
 
-            // Add OpenStreetMap tile layer
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
+            if (currentPolygon) {
+                map.removeLayer(currentPolygon);
+            }
+
+            // Medieval-style polygon
+            currentPolygon = L.polygon(coordinates, { 
+                color: '#c5a572', 
+                weight: 3,
+                fillColor: '#c5a572',
+                fillOpacity: 0.3,
+                dashArray: '5, 5'
             }).addTo(map);
 
-            // Draw the polygon
-            if (currentPolygon) {
-                map.removeLayer(currentPolygon)
-            }
-            currentPolygon = L.polygon(coordinates, { color: 'blue' }).addTo(map);
-
             const bounds = currentPolygon.getBounds();
-            map.flyTo(bounds.getCenter(), map.getBoundsZoom(bounds)*0.95, {
+            map.flyTo(bounds.getCenter(), map.getBoundsZoom(bounds) * 0.95, {
                 animate: !goFast,
                 easeLinearity: 0.5
             });
         }
 
+        // Handle coordinate clicks
         async function handleCoords(e) {
+            showLoading();
             var lat = e.latlng.lat.toFixed(13);
             var lng = e.latlng.lng.toFixed(12);
             return handleCoordsFixed(lat, lng);
         }
 
         async function handleCoordsFixed(lat, lng) {
-            var apiUrl = `https://uldk.gugik.gov.pl/?request=GetParcelByXY&xy=${lng},${lat},4326&result=geom_wkt&crs=4326`
+            showLoading();
+            var apiUrl = `https://uldk.gugik.gov.pl/?request=GetParcelByXY&xy=${lng},${lat},4326&result=geom_wkt&crs=4326`;
             try {
                 const response = await fetch(apiUrl);
                 const polygon = await response.text();
-                console.log(polygon)
                 await parseAndDrawPolygon(polygon, false);
                 await getDetails(lat, lng);
             } catch (error) {
                 console.error('Error:', error);
-                document.getElementById('resultsDisplay').textContent = errMsg;
+                document.getElementById('resultsDisplay').textContent = errMsg[currentLanguage];
+            } finally {
+                hideLoading();
             }
         }
 
         async function handleParcelId(parcelId) {
-            var apiUrl = `https://uldk.gugik.gov.pl/?request=GetParcelByIdOrNr&id=${parcelId}&result=geom_wkt&crs=4326`
+            showLoading();
+            var apiUrl = `https://uldk.gugik.gov.pl/?request=GetParcelByIdOrNr&id=${parcelId}&result=geom_wkt&crs=4326`;
             try {
                 const response = await fetch(apiUrl);
                 const polygon = await response.text();
-                console.log(polygon)
                 await parseAndDrawPolygon(polygon, true);
                 let middle = currentPolygon.getBounds().getCenter();
                 await getDetails(middle.lat, middle.lng);
             } catch (error) {
                 console.error('Error:', error);
-                document.getElementById('resultsDisplay').textContent = errMsg;
+                document.getElementById('resultsDisplay').textContent = errMsg[currentLanguage];
+            } finally {
+                hideLoading();
             }
         }
 
@@ -305,12 +720,14 @@
                 document.getElementById('resultsDisplay').innerHTML = parsedResult;
             } catch (error) {
                 console.error('Error:', error);
-                document.getElementById('resultsDisplay').textContent = errMsg;
+                document.getElementById('resultsDisplay').textContent = errMsg[currentLanguage];
             }
         }
 
+        // Search functionality
         let debounceTimer;
         let featuresData = [];
+        let selectedHintIndex = -1;
 
         function debounce(func, delay) {
             return function() {
@@ -322,10 +739,10 @@
         function search() {
             const query = document.getElementById('searchInput').value;
             if (query.length < 3) {
-                document.getElementById('dropdown').style.display = 'none';
+                hideSearchHints();
                 return;
             }
-            fetch(`https://capap.gugik.gov.pl/api/fts/ref/qq/?f=geojson&q=${query}&offs=0&cnt=10`)
+            fetch(`https://capap.gugik.gov.pl/api/fts/ref/qq/?f=geojson&q=${query}&offs=0`)
                 .then(response => response.json())
                 .then(data => {
                     featuresData = data.features;
@@ -335,17 +752,90 @@
         }
 
         function displayResults(features) {
-            const dropdown = document.getElementById('dropdown');
+            const hintsContainer = document.getElementById('searchHints');
+            hintsContainer.innerHTML = '';
+            selectedHintIndex = -1;
+            
             if (features.length > 0) {
+                let validFeatures = [];
                 features.forEach((feature, index) => {
-                    if (!feature.properties.miejsc_nazwa || !feature.properties.ul_nazwa_glowna) {
+                    //if (!feature.properties.miejsc_nazwa || !feature.properties.ul_nazwa_glowna) {
+                    if (!feature._search.name) {
                         return;
                     }
-                    const option = document.createElement('option');
-                    option.value = index;
-                    option.textContent = `${feature.properties.miejsc_nazwa} - ${feature.properties.ul_nazwa_glowna}`;
-                    dropdown.appendChild(option);
+                    validFeatures.push({feature, originalIndex: index});
                 });
+                
+                validFeatures.forEach((item, index) => {
+                    const hintDiv = document.createElement('div');
+                    hintDiv.className = 'search-hint';
+                    hintDiv.textContent = `${item.feature._search.name} ${item.feature._search.desc || ''}`;
+                    hintDiv.dataset.index = item.originalIndex;
+                    
+                    hintDiv.addEventListener('click', function() {
+                        selectHint(item.originalIndex);
+                    });
+                    
+                    hintsContainer.appendChild(hintDiv);
+                });
+                
+                showSearchHints();
+            } else {
+                hideSearchHints();
+            }
+        }
+
+        function showSearchHints() {
+            document.getElementById('searchHints').style.display = 'block';
+        }
+
+        function hideSearchHints() {
+            document.getElementById('searchHints').style.display = 'none';
+            selectedHintIndex = -1;
+        }
+
+        function selectHint(index) {
+            focusMap(index);
+            hideSearchHints();
+            // Clear the search input or keep the selected value
+            const feature = featuresData[index];
+            if (feature && feature.properties) {
+                document.getElementById('searchInput').value = `${feature._search.name} ${feature._search.desc || ''}`;
+            }
+        }
+
+        function navigateHints(direction) {
+            const hints = document.querySelectorAll('.search-hint');
+            if (hints.length === 0) return;
+            
+            // Remove previous selection
+            if (selectedHintIndex >= 0 && selectedHintIndex < hints.length) {
+                hints[selectedHintIndex].classList.remove('selected');
+            }
+            
+            // Update selected index
+            if (direction === 'down') {
+                selectedHintIndex = (selectedHintIndex + 1) % hints.length;
+            } else if (direction === 'up') {
+                selectedHintIndex = selectedHintIndex <= 0 ? hints.length - 1 : selectedHintIndex - 1;
+            }
+            
+            // Add new selection
+            if (selectedHintIndex >= 0 && selectedHintIndex < hints.length) {
+                hints[selectedHintIndex].classList.add('selected');
+                // Scroll into view if needed
+                hints[selectedHintIndex].scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        function selectCurrentHint() {
+            const hints = document.querySelectorAll('.search-hint');
+            if (selectedHintIndex >= 0 && selectedHintIndex < hints.length) {
+                const selectedHint = hints[selectedHintIndex];
+                selectHint(parseInt(selectedHint.dataset.index));
+            } else if (hints.length > 0) {
+                // Select first hint if none selected
+                selectHint(parseInt(hints[0].dataset.index));
             }
         }
 
@@ -358,38 +848,69 @@
             const lat = coordinates[1];
             const lon = coordinates[0];
             map.setView([lat, lon], 15);
+            
+            // Remove existing markers
             map.eachLayer((layer) => {
-                if (layer instanceof L.Marker) {
+                if (layer instanceof L.Marker || layer instanceof L.CircleMarker) {
                     map.removeLayer(layer);
                 }
             });
-            L.marker([lat, lon]).addTo(map);
+            
+            // Medieval-style marker
+            L.circleMarker([lat, lon], {
+                color: '#c5a572',
+                weight: 3,
+                fillColor: '#722f37',
+                fillOpacity: 0.8,
+                radius: 8
+            }).addTo(map);
         }
 
+        // Event listeners
         const searchInput = document.getElementById('searchInput');
         searchInput.addEventListener('input', debounce(search, 300));
         searchInput.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter') {
+            const hintsVisible = document.getElementById('searchHints').style.display === 'block';
+            
+            if (event.key === 'ArrowDown') {
                 event.preventDefault();
-                search();
+                if (hintsVisible) {
+                    navigateHints('down');
+                }
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                if (hintsVisible) {
+                    navigateHints('up');
+                }
+            } else if (event.key === 'Enter') {
+                event.preventDefault();
+                if (hintsVisible) {
+                    selectCurrentHint();
+                } else {
+                    search();
+                }
+            } else if (event.key === 'Escape') {
+                hideSearchHints();
             }
         });
 
-        const dropdown = document.getElementById('dropdown');
-        dropdown.addEventListener('change', function() {
-            if (this.value !== '') {
-                focusMap(parseInt(this.value));
+        // Hide hints when clicking outside
+        document.addEventListener('click', function(event) {
+            const searchContainer = document.querySelector('.search-container');
+            if (!searchContainer.contains(event.target)) {
+                hideSearchHints();
             }
         });
 
         map.on('click', handleCoords);
 
-        // If there exist a param in the URL, then use it as the initial coordinates
+        // URL parameter handling
         const urlParams = new URLSearchParams(window.location.search);
         const id = urlParams.get('id');
         const lat = urlParams.get('lat');
         const lng = urlParams.get('lng');
         const lang = urlParams.get('lang');
+        
         if (id) {
             handleParcelId(id);
         } else if (lat && lng) {
@@ -400,8 +921,4 @@
         }
     </script>
 </body>
-<footer>
-Sarna &copy; 2024 <a href="https://bio.sarna.dev">bio.sarna.dev</a>
-</footer>
-
 </html>
