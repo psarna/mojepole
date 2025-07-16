@@ -331,16 +331,23 @@
         @media (max-width: 768px) {
             .main-container {
                 flex-direction: column;
+                padding-top: 120px;
             }
             
             .left-panel {
                 width: 100%;
-                height: 40vh;
                 margin-top: 0;
+                position: relative;
+                height: auto;
+                min-height: 200px;
+                order: 1;
             }
             
             .map-container {
                 margin-top: 0;
+                flex: 1;
+                height: 60vh;
+                order: 2;
             }
             
             .header-title {
@@ -349,6 +356,10 @@
             
             .header-subtitle {
                 font-size: 1rem;
+            }
+            
+            .info-panel {
+                margin-bottom: 10px;
             }
         }
 
