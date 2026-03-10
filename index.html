@@ -6,6 +6,19 @@
     <title>Moje Pole!</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
     <style>
+        :root {
+            --bg: #eef3f8;
+            --panel: rgba(255, 255, 255, 0.82);
+            --panel-strong: rgba(255, 255, 255, 0.94);
+            --line: rgba(96, 125, 159, 0.2);
+            --line-strong: rgba(96, 125, 159, 0.34);
+            --text: #16202a;
+            --muted: #5e7186;
+            --accent: #2563eb;
+            --accent-soft: rgba(37, 99, 235, 0.12);
+            --shadow: 0 18px 40px rgba(30, 41, 59, 0.08);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -14,9 +27,12 @@
 
         body, html {
             height: 100%;
-            font-family: Arial, sans-serif;
-            background: #f4f4f4;
-            color: #111;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(37, 99, 235, 0.1), transparent 28%),
+                radial-gradient(circle at top right, rgba(14, 165, 233, 0.08), transparent 24%),
+                linear-gradient(180deg, #f7fafc 0%, var(--bg) 100%);
+            color: var(--text);
             overflow-x: hidden;
         }
 
@@ -29,22 +45,27 @@
             top: 0;
             left: 0;
             right: 0;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(248, 250, 252, 0.78);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
             padding: 10px 56px 10px 10px;
             z-index: 1000;
             text-align: center;
-            border-bottom: 1px solid #dcdcdc;
+            border-bottom: 1px solid var(--line);
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
         }
 
         .header-title {
             margin: 0;
-            font-size: 1.5rem;
-            font-weight: 700;
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
         }
 
         .header-subtitle {
             margin: 6px 0 10px;
             font-size: 0.95rem;
+            color: var(--muted);
         }
 
         .search-container {
@@ -55,36 +76,42 @@
 
         .search-input {
             width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #bdbdbd;
-            border-radius: 4px;
+            padding: 12px 14px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
             font-size: 1rem;
-            background: #fff;
-            color: #111;
+            background: var(--panel-strong);
+            color: var(--text);
             outline: none;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
         }
 
         .search-input:focus {
-            border-color: #4a90e2;
+            border-color: rgba(37, 99, 235, 0.45);
+            box-shadow: 0 0 0 4px var(--accent-soft);
         }
 
         .search-hints {
             position: absolute;
-            top: 100%;
+            top: calc(100% + 8px);
             left: 0;
             right: 0;
-            background: #fff;
-            border: 1px solid #bdbdbd;
-            max-height: 200px;
+            background: var(--panel-strong);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            max-height: 240px;
             overflow-y: auto;
             z-index: 1000;
             display: none;
+            box-shadow: var(--shadow);
         }
 
         .search-hint {
-            padding: 10px 12px;
+            padding: 12px 14px;
             cursor: pointer;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid rgba(96, 125, 159, 0.12);
+            transition: background 0.16s ease, color 0.16s ease;
         }
 
         .search-hint:last-child {
@@ -93,7 +120,7 @@
 
         .search-hint:hover,
         .search-hint.selected {
-            background: #f0f6ff;
+            background: var(--accent-soft);
         }
 
         .language-switch {
@@ -109,8 +136,16 @@
             width: 30px;
             height: 20px;
             cursor: pointer;
-            border: none;
+            border: 1px solid rgba(255, 255, 255, 0.7);
             background-size: cover;
+            border-radius: 999px;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+            transition: transform 0.16s ease, box-shadow 0.16s ease;
+        }
+
+        .flag-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.16);
         }
 
         .flag-pl {
@@ -129,25 +164,45 @@
         #map {
             height: 65vh;
             width: 100%;
-            background: #ddd;
+            background: #dbe4ee;
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            box-shadow: var(--shadow);
         }
 
         .info-panel {
             width: 100%;
             min-height: 30vh;
-            margin-top: 5px;
-            padding: 10px;
+            margin-top: 10px;
+            padding: 16px 18px;
             font-size: 14px;
             overflow-y: auto;
-            background: #fff;
-            border: 1px solid #dcdcdc;
+            background: var(--panel);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            box-shadow: var(--shadow);
         }
 
         #resultsDisplay,
         #resultsDisplayMobile {
             white-space: pre-wrap;
             word-wrap: break-word;
-            line-height: 1.4;
+            line-height: 1.6;
+        }
+
+        #resultsDisplay a,
+        #resultsDisplayMobile a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+            touch-action: manipulation;
+        }
+
+        #resultsDisplay a:hover,
+        #resultsDisplayMobile a:hover {
+            text-decoration: underline;
         }
 
         .desktop-only {
@@ -204,10 +259,11 @@
         .spinner {
             width: 40px;
             height: 40px;
-            border: 4px solid rgba(255, 255, 255, 0.8);
-            border-top: 4px solid #4a90e2;
+            border: 4px solid rgba(255, 255, 255, 0.9);
+            border-top: 4px solid var(--accent);
             border-radius: 50%;
             animation: spin 1s linear infinite;
+            filter: drop-shadow(0 8px 16px rgba(37, 99, 235, 0.18));
         }
 
         @keyframes spin {
@@ -347,7 +403,7 @@
 
         function googleMapsLink(lat, lng) {
             const label = welcomeMsg[currentLanguage].mapsLink;
-            return `<a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+            return `<a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_self" rel="noopener noreferrer">${label}</a>`;
         }
 
         function parseXML(xmlString, lat, lng) {
