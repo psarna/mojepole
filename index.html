@@ -274,6 +274,17 @@
         .decorative-corner {
             display: none;
         }
+
+        .side-length-label {
+            color: #1d4ed8;
+            font-size: 11px;
+            font-weight: 800;
+            line-height: 1;
+            padding: 2px 4px;
+            white-space: nowrap;
+            pointer-events: none;
+            text-shadow: 0 1px 2px #fff, 0 -1px 2px #fff, 1px 0 2px #fff, -1px 0 2px #fff;
+        }
     </style>
 </head>
 <body>
@@ -359,6 +370,7 @@
         };
 
         var currentPolygon = null;
+        var currentSideLabels = [];
         var currentLanguage = 'pl';
         var currentDetailsCoords = null;
 
@@ -384,6 +396,7 @@
             document.getElementById('searchInput').placeholder = msg.placeholder;
 
             if (currentDetailsCoords) {
+                drawPolygonSideLabels();
                 await getDetails(currentDetailsCoords.lat, currentDetailsCoords.lng);
                 return;
             }
@@ -406,6 +419,126 @@
             return `<a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_self" rel="noopener noreferrer">${label}</a>`;
         }
 
+        function getPolygonCoords() {
+            if (!currentPolygon) {
+                return [];
+            }
+
+            let coords = currentPolygon.getLatLngs()[0] || [];
+            coords = coords.slice();
+
+            if (coords.length > 1 && coords[0].equals(coords[coords.length - 1])) {
+                coords.pop();
+            }
+
+            return coords;
+        }
+
+        function formatLength(length) {
+            const rounded = length < 10
+                ? Math.round(length * 10) / 10
+                : Math.round(length);
+
+            return `${rounded.toLocaleString(currentLanguage === "pl" ? "pl-PL" : "en-US")}m`;
+        }
+
+        function polygonSideMeasurements() {
+            const coords = getPolygonCoords();
+            if (coords.length < 2) {
+                return [];
+            }
+
+            const straightAngleTolerance = 5;
+            const pointAt = (index) => coords[(index + coords.length) % coords.length];
+            const angleAt = (index) => {
+                const prev = L.CRS.EPSG3857.project(pointAt(index - 1));
+                const current = L.CRS.EPSG3857.project(pointAt(index));
+                const next = L.CRS.EPSG3857.project(pointAt(index + 1));
+                const incoming = { x: prev.x - current.x, y: prev.y - current.y };
+                const outgoing = { x: next.x - current.x, y: next.y - current.y };
+                const incomingLength = Math.hypot(incoming.x, incoming.y);
+                const outgoingLength = Math.hypot(outgoing.x, outgoing.y);
+
+                if (!incomingLength || !outgoingLength) {
+                    return 0;
+                }
+
+                const cosine = (incoming.x * outgoing.x + incoming.y * outgoing.y) / (incomingLength * outgoingLength);
+                return Math.acos(Math.max(-1, Math.min(1, cosine))) * 180 / Math.PI;
+            };
+
+            const groups = [];
+            let currentGroup = { length: 0, edges: [] };
+
+            coords.forEach((coord, index) => {
+                const next = pointAt(index + 1);
+                const edgeLength = coord.distanceTo(next);
+                currentGroup.length += edgeLength;
+                currentGroup.edges.push({ from: coord, to: next, length: edgeLength });
+
+                if (Math.abs(180 - angleAt(index + 1)) > straightAngleTolerance) {
+                    groups.push(currentGroup);
+                    currentGroup = { length: 0, edges: [] };
+                }
+            });
+
+            if (currentGroup.edges.length > 0) {
+                if (groups.length > 0) {
+                    groups[0].length += currentGroup.length;
+                    groups[0].edges = currentGroup.edges.concat(groups[0].edges);
+                } else {
+                    groups.push(currentGroup);
+                }
+            }
+
+            return groups.map(group => {
+                let remaining = group.length / 2;
+                let labelPosition = group.edges[0].from;
+
+                for (const edge of group.edges) {
+                    if (remaining <= edge.length) {
+                        const ratio = edge.length ? remaining / edge.length : 0;
+                        labelPosition = L.latLng(
+                            edge.from.lat + (edge.to.lat - edge.from.lat) * ratio,
+                            edge.from.lng + (edge.to.lng - edge.from.lng) * ratio
+                        );
+                        break;
+                    }
+
+                    remaining -= edge.length;
+                }
+
+                return { length: group.length, labelPosition };
+            });
+        }
+
+        function polygonSideLengths() {
+            return polygonSideMeasurements().map(side => formatLength(side.length)).join(" x ");
+        }
+
+        function clearSideLabels() {
+            currentSideLabels.forEach(label => map.removeLayer(label));
+            currentSideLabels = [];
+        }
+
+        function drawPolygonSideLabels() {
+            clearSideLabels();
+
+            polygonSideMeasurements().forEach(side => {
+                const label = L.marker(side.labelPosition, {
+                    interactive: false,
+                    icon: L.divIcon({
+                        className: "side-length-label",
+                        html: formatLength(side.length),
+                        iconAnchor: [12, 6],
+                        iconSize: null
+                    })
+                }).addTo(map);
+
+                currentSideLabels.push(label);
+            });
+        }
+
         function parseXML(xmlString, lat, lng) {
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(xmlString, "text/xml");
@@ -423,6 +556,7 @@
                     "Identyfikator działki": "Identyfikator działki",
                     "Numer działki": "Numer działki",
                     "Pole pow. w ewidencji gruntów (ha)": "Pole pow. w ewidencji gruntów (ha)",
+                    "Wymiary wielokąta": "Wymiary wielokąta",
                     "Oznaczenie użytku": "Oznaczenie użytku",
                     "Oznaczenie konturu": "Oznaczenie konturu",
                     "Województwo": "Województwo",
@@ -433,6 +567,7 @@
                     "Identyfikator działki": "Plot identifier",
                     "Numer działki": "Plot number",
                     "Pole pow. w ewidencji gruntów (ha)": "Area in land records (ha)",
+                    "Wymiary wielokąta": "Polygon side lengths",
                     "Oznaczenie użytku": "Land use designation",
                     "Oznaczenie konturu": "Contour designation",
                     "Województwo": "Voivodeship",
@@ -465,6 +600,13 @@
                     value = `<a href="index.html?id=${value}&lang=${currentLanguage}" target="_blank">${value}</a>`;
                 }
                 result += `${translations[currentLanguage][name]}: ${value}<br>`;
+
+                if (name == "Pole pow. w ewidencji gruntów (ha)") {
+                    const sideLengths = polygonSideLengths();
+                    if (sideLengths) {
+                        result += `${translations[currentLanguage]["Wymiary wielokąta"]}: ${sideLengths}<br>`;
+                    }
+                }
             });
 
             result += `<br>${googleMapsLink(lat, lng)}`;
@@ -500,6 +642,7 @@
                 return [lat, lng];
             });
 
+            clearSideLabels();
             if (currentPolygon) {
                 map.removeLayer(currentPolygon);
             }
@@ -507,6 +650,7 @@
             currentPolygon = L.polygon(coordinates, { 
                 color: 'blue'
             }).addTo(map);
+            drawPolygonSideLabels();
 
             const bounds = currentPolygon.getBounds();
             map.flyTo(bounds.getCenter(), map.getBoundsZoom(bounds) * 0.95, {
