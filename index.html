@@ -322,6 +322,7 @@
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
     <script src="https://unpkg.com/@turf/turf/turf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.11.0/proj4.js"></script>
     <script>
         var polandRegionBounds = [
             [48.5, 14.0],
@@ -368,6 +369,10 @@
                 noData: 'No data found for this location.'
             }
         };
+
+        if (window.proj4) {
+            proj4.defs("EPSG:2180", "+proj=tmerc +lat_0=0 +lon_0=19 +k=0.9993 +x_0=500000 +y_0=-5300000 +ellps=GRS80 +units=m +no_defs +type=crs");
+        }
 
         var currentPolygon = null;
         var currentSideLabels = [];
@@ -516,6 +521,42 @@
             return polygonSideMeasurements().map(side => formatLength(side.length)).join(" x ");
         }
 
+        function approximatePolygonAreaHa() {
+            const coords = getPolygonCoords();
+            if (coords.length < 3) {
+                return "";
+            }
+
+            coords.push(coords[0]);
+            const polygon = turf.polygon([coords.map(c => [c.lng, c.lat])]);
+            return (turf.area(polygon) / 10000).toFixed(2);
+        }
+
+        function fallbackParcelDetails(lat, lng) {
+            const area = approximatePolygonAreaHa();
+            const sideLengths = polygonSideLengths();
+            const areaLabel = currentLanguage === "pl"
+                ? "Pole pow. w ewidencji gruntów (ha)"
+                : "Area in land records (ha)";
+            const dimensionsLabel = currentLanguage === "pl"
+                ? "Wymiary wielokąta"
+                : "Polygon side lengths";
+            const approximate = currentLanguage === "pl"
+                ? "(w przybliżeniu)"
+                : "(approximately)";
+
+            let result = "";
+            if (area) {
+                result += `${areaLabel}: ${approximate} ${area}<br>`;
+            }
+            if (sideLengths) {
+                result += `${dimensionsLabel}: ${sideLengths}<br>`;
+            }
+
+            result += `<br>${googleMapsLink(lat, lng)}`;
+            return result;
+        }
+
         function clearSideLabels() {
             currentSideLabels.forEach(label => map.removeLayer(label));
             currentSideLabels = [];
@@ -545,7 +586,7 @@
             const layer = xmlDoc.querySelector("Layer");
 
             if (!layer) {
-                return welcomeMsg[currentLanguage].noData;
+                return currentPolygon ? fallbackParcelDetails(lat, lng) : welcomeMsg[currentLanguage].noData;
             }
 
             let result = "";
@@ -584,13 +625,10 @@
                 }
                 let value = attr.textContent.trim();
                 if (name == "Pole pow. w ewidencji gruntów (ha)" && (value == null || value == "" || value == "null")) {
-                    var coords = currentPolygon.getLatLngs()[0].map(c => [c.lat, c.lng]);
-                    coords[coords.length] = coords[0];
-                    var polygon = turf.polygon([coords.map(c => [c[1], c[0]])]);
-                    var polygonArea = turf.area(polygon);
+                    const polygonArea = approximatePolygonAreaHa();
                     value = currentLanguage === 'pl' 
-                        ? "(w przybliżeniu) " + (polygonArea / 10000).toFixed(2)
-                        : "(approximately) " + (polygonArea / 10000).toFixed(2);
+                        ? "(w przybliżeniu) " + polygonArea
+                        : "(approximately) " + polygonArea;
                 }
 
                 value = value.replace(/<\/?[^>]+(>|$)/g, "");
@@ -632,15 +670,29 @@
             const srid = sridMatch[1];
             const polygonCoords = sridMatch[2];
 
-            if (srid !== '4326') {
-                console.error("Only SRID=4326 (WGS84) is supported.");
+            if (srid !== '4326' && srid !== '2180') {
+                console.error("Unsupported polygon SRID: " + srid);
                 return;
             }
 
             const coordinates = polygonCoords.split(',').map(coord => {
-                const [lng, lat] = coord.trim().split(' ').map(Number);
-                return [lat, lng];
+                const [x, y] = coord.trim().split(' ').map(Number);
+                if (srid === '2180') {
+                    if (!window.proj4) {
+                        console.error("proj4 is required to draw SRID=2180 polygons.");
+                        return null;
+                    }
+
+                    const [lng, lat] = proj4('EPSG:2180', 'EPSG:4326', [x, y]);
+                    return [lat, lng];
+                }
+
+                return [y, x];
             });
+
+            if (coordinates.some(coord => coord === null)) {
+                return;
+            }
 
             clearSideLabels();
             if (currentPolygon) {
@@ -708,12 +760,22 @@
 
             try {
                 const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    throw new Error("Details request failed with status " + response.status);
+                }
+
                 const text = await response.text();
                 const parsedResult = parseXML(text, lat, lng);
                 currentDetailsCoords = { lat, lng };
                 setResultsContent(parsedResult, true);
             } catch (error) {
                 console.error('Error:', error);
+                if (currentPolygon) {
+                    currentDetailsCoords = { lat, lng };
+                    setResultsContent(fallbackParcelDetails(lat, lng), true);
+                    return;
+                }
+
                 setResultsContent(errMsg[currentLanguage], false);
             }
         }
