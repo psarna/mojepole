@@ -185,6 +185,106 @@
             box-shadow: var(--shadow);
         }
 
+        .info-panel-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(220px, 28%);
+            gap: 18px;
+            min-height: calc(30vh - 34px);
+        }
+
+        .history-panel {
+            padding-left: 18px;
+            border-left: 1px solid var(--line);
+        }
+
+        .history-title {
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            font-weight: 750;
+        }
+
+        .history-list {
+            display: grid;
+            gap: 7px;
+        }
+
+        .history-entry {
+            display: flex;
+            align-items: stretch;
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 11px;
+            background: rgba(255, 255, 255, 0.56);
+            transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+            overflow: hidden;
+        }
+
+        .history-entry:hover,
+        .history-entry:focus-within {
+            border-color: rgba(37, 99, 235, 0.45);
+            background: var(--accent-soft);
+            transform: translateY(-1px);
+        }
+
+        .history-entry-open,
+        .history-entry-remove {
+            border: 0;
+            background: transparent;
+            color: var(--text);
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .history-entry-open {
+            min-width: 0;
+            flex: 1;
+            padding: 9px 10px;
+            text-align: left;
+        }
+
+        .history-entry-remove {
+            width: 38px;
+            flex: 0 0 38px;
+            color: var(--muted);
+            font-size: 1.1rem;
+            line-height: 1;
+        }
+
+        .history-entry-open:focus-visible,
+        .history-entry-remove:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: -3px;
+        }
+
+        .history-entry-remove:hover {
+            background: rgba(220, 38, 38, 0.1);
+            color: #b91c1c;
+        }
+
+        .history-entry-title,
+        .history-entry-detail {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .history-entry-title {
+            font-weight: 650;
+        }
+
+        .history-entry-detail,
+        .history-empty {
+            margin-top: 2px;
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+
+        .history-entry-detail {
+            line-height: 1.35;
+            white-space: normal;
+        }
+
         #resultsDisplay,
         #resultsDisplayMobile {
             white-space: pre-wrap;
@@ -236,6 +336,17 @@
             .info-panel {
                 max-height: none;
                 min-height: 200px;
+            }
+
+            .info-panel-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .history-panel {
+                padding-top: 14px;
+                padding-left: 0;
+                border-top: 1px solid var(--line);
+                border-left: 0;
             }
 
             .desktop-only {
@@ -311,11 +422,23 @@
         </div>
 
         <div class="info-panel desktop-only">
-            <div id="resultsDisplay">Witaj na portalu Moje Pole. Kliknij na wybrany obszar mapy, aby zaznaczyć działkę i poznać jej szczegóły.</div>
+            <div class="info-panel-layout">
+                <div id="resultsDisplay">Witaj na portalu Moje Pole. Kliknij na wybrany obszar mapy, aby zaznaczyć działkę i poznać jej szczegóły.</div>
+                <aside class="history-panel">
+                    <h4 class="history-title" data-history-title>Ostatnio wybrane działki</h4>
+                    <div class="history-list" id="historyList"></div>
+                </aside>
+            </div>
         </div>
 
         <div class="info-panel mobile-only">
-            <div id="resultsDisplayMobile">Witaj na portalu Moje Pole. Kliknij na wybrany obszar mapy, aby zaznaczyć działkę i poznać jej szczegóły.</div>
+            <div class="info-panel-layout">
+                <div id="resultsDisplayMobile">Witaj na portalu Moje Pole. Kliknij na wybrany obszar mapy, aby zaznaczyć działkę i poznać jej szczegóły.</div>
+                <aside class="history-panel">
+                    <h4 class="history-title" data-history-title>Ostatnio wybrane działki</h4>
+                    <div class="history-list" id="historyListMobile"></div>
+                </aside>
+            </div>
         </div>
     </div>
 
@@ -359,16 +482,31 @@
                 placeholder: 'Wpisz miasto, ulicę...',
                 welcome: 'Witaj na portalu Moje Pole. Kliknij na wybrany obszar mapy, aby zaznaczyć działkę i poznać jej szczegóły.',
                 mapsLink: 'Otwórz w Google Maps',
-                noData: 'Nie znaleziono danych dla tej lokalizacji.'
+                noData: 'Nie znaleziono danych dla tej lokalizacji.',
+                historyTitle: 'Ostatnio wybrane działki',
+                historyEmpty: 'Historia jest jeszcze pusta.',
+                plot: 'Działka',
+                removeHistory: 'Usuń z historii',
+                voivodeship: 'Województwo',
+                county: 'Powiat'
             },
             en: {
                 subtitle: 'Click on the selected area of the map to show its details.',
                 placeholder: 'Enter city, street...',
                 welcome: 'Welcome to Moje Pole portal. Click on the selected area of the map to show its details.',
                 mapsLink: 'Open in Google Maps',
-                noData: 'No data found for this location.'
+                noData: 'No data found for this location.',
+                historyTitle: 'Recently selected plots',
+                historyEmpty: 'Your history is empty.',
+                plot: 'Plot',
+                removeHistory: 'Remove from history',
+                voivodeship: 'Voivodeship',
+                county: 'County'
             }
         };
+
+        const plotHistoryStorageKey = 'mojePole.plotHistory';
+        const plotHistoryLimit = 6;
 
         if (window.proj4) {
             proj4.defs("EPSG:2180", "+proj=tmerc +lat_0=0 +lon_0=19 +k=0.9993 +x_0=500000 +y_0=-5300000 +ellps=GRS80 +units=m +no_defs +type=crs");
@@ -378,6 +516,140 @@
         var currentSideLabels = [];
         var currentLanguage = 'pl';
         var currentDetailsCoords = null;
+
+        function loadPlotHistory() {
+            try {
+                const history = JSON.parse(localStorage.getItem(plotHistoryStorageKey) || '[]');
+                return Array.isArray(history) ? history : [];
+            } catch (error) {
+                console.warn('Could not read plot history:', error);
+                return [];
+            }
+        }
+
+        function savePlotHistory(history) {
+            try {
+                localStorage.setItem(plotHistoryStorageKey, JSON.stringify(history));
+            } catch (error) {
+                console.warn('Could not save plot history:', error);
+            }
+        }
+
+        function historyEntryLabel(entry) {
+            return entry.plotNumber
+                ? `${welcomeMsg[currentLanguage].plot} ${entry.plotNumber}`
+                : entry.identifier || `${Number(entry.lat).toFixed(5)}, ${Number(entry.lng).toFixed(5)}`;
+        }
+
+        function plotHistoryEntryKey(entry) {
+            return entry.identifier
+                || `${Number(entry.lat).toFixed(7)},${Number(entry.lng).toFixed(7)}`;
+        }
+
+        function removePlotFromHistory(entry) {
+            const key = plotHistoryEntryKey(entry);
+            savePlotHistory(loadPlotHistory().filter(item => plotHistoryEntryKey(item) !== key));
+            renderPlotHistory();
+        }
+
+        function renderPlotHistory() {
+            const history = loadPlotHistory();
+            document.querySelectorAll('[data-history-title]').forEach(title => {
+                title.textContent = welcomeMsg[currentLanguage].historyTitle;
+            });
+
+            ['historyList', 'historyListMobile'].forEach(id => {
+                const list = document.getElementById(id);
+                list.replaceChildren();
+
+                if (history.length === 0) {
+                    const empty = document.createElement('p');
+                    empty.className = 'history-empty';
+                    empty.textContent = welcomeMsg[currentLanguage].historyEmpty;
+                    list.appendChild(empty);
+                    return;
+                }
+
+                history.forEach(entry => {
+                    const row = document.createElement('div');
+                    row.className = 'history-entry';
+
+                    const openButton = document.createElement('button');
+                    openButton.type = 'button';
+                    openButton.className = 'history-entry-open';
+                    openButton.title = historyEntryLabel(entry);
+
+                    const title = document.createElement('span');
+                    title.className = 'history-entry-title';
+                    title.textContent = historyEntryLabel(entry);
+                    openButton.appendChild(title);
+
+                    const administrativeDetails = [];
+                    if (entry.voivodeship) {
+                        administrativeDetails.push(`${welcomeMsg[currentLanguage].voivodeship}: ${entry.voivodeship}`);
+                    }
+                    if (entry.county) {
+                        administrativeDetails.push(`${welcomeMsg[currentLanguage].county}: ${entry.county}`);
+                    }
+
+                    if (administrativeDetails.length > 0) {
+                        const detail = document.createElement('span');
+                        detail.className = 'history-entry-detail';
+                        detail.textContent = administrativeDetails.join(' · ');
+                        openButton.appendChild(detail);
+                    }
+
+                    openButton.addEventListener('click', () => handleCoordsFixed(entry.lat, entry.lng));
+                    row.appendChild(openButton);
+
+                    const removeButton = document.createElement('button');
+                    removeButton.type = 'button';
+                    removeButton.className = 'history-entry-remove';
+                    removeButton.textContent = '×';
+                    removeButton.title = welcomeMsg[currentLanguage].removeHistory;
+                    removeButton.setAttribute('aria-label', `${welcomeMsg[currentLanguage].removeHistory}: ${historyEntryLabel(entry)}`);
+                    removeButton.addEventListener('click', () => removePlotFromHistory(entry));
+                    row.appendChild(removeButton);
+
+                    list.appendChild(row);
+                });
+            });
+        }
+
+        function addPlotToHistory(lat, lng, details) {
+            const entry = {
+                lat: Number(lat),
+                lng: Number(lng),
+                identifier: details.identifier || '',
+                plotNumber: details.plotNumber || '',
+                voivodeship: details.voivodeship || '',
+                county: details.county || ''
+            };
+            const key = plotHistoryEntryKey(entry);
+            const history = loadPlotHistory().filter(item => plotHistoryEntryKey(item) !== key);
+            history.unshift(entry);
+            savePlotHistory(history.slice(0, plotHistoryLimit));
+            renderPlotHistory();
+        }
+
+        function plotDetailsFromXML(xmlString) {
+            const xmlDoc = new DOMParser().parseFromString(xmlString, 'text/xml');
+            const details = {
+                identifier: '',
+                plotNumber: '',
+                voivodeship: '',
+                county: ''
+            };
+            xmlDoc.querySelectorAll('Attribute').forEach(attribute => {
+                const name = attribute.getAttribute('Name');
+                const value = attribute.textContent.trim().replace(/<\/?[^>]+(>|$)/g, '');
+                if (name === 'Identyfikator działki') details.identifier = value;
+                if (name === 'Numer działki') details.plotNumber = value;
+                if (name === 'Województwo') details.voivodeship = value;
+                if (name === 'Powiat') details.county = value;
+            });
+            return details;
+        }
 
         function setResultsContent(content, isHtml) {
             const desktop = document.getElementById('resultsDisplay');
@@ -399,10 +671,11 @@
             
             document.getElementById('header-subtitle').textContent = msg.subtitle;
             document.getElementById('searchInput').placeholder = msg.placeholder;
+            renderPlotHistory();
 
             if (currentDetailsCoords) {
                 drawPolygonSideLabels();
-                await getDetails(currentDetailsCoords.lat, currentDetailsCoords.lng);
+                await getDetails(currentDetailsCoords.lat, currentDetailsCoords.lng, false);
                 return;
             }
 
@@ -754,7 +1027,7 @@
             }
         }
 
-        async function getDetails(lat, lng) {
+        async function getDetails(lat, lng, shouldRecordHistory = true) {
             var bbox = `${lat},${lng},${lat},${lng}`;
             var apiUrl = `https://integracja.gugik.gov.pl/cgi-bin/KrajowaIntegracjaEwidencjiGruntow?SERVICE=WMS&request=GetFeatureInfo&version=1.3.0&layers=obreby,dzialki&styles=&crs=EPSG:4326&bbox=${bbox}&query_layers=dzialki,obreby`;
 
@@ -768,6 +1041,9 @@
                 const parsedResult = parseXML(text, lat, lng);
                 currentDetailsCoords = { lat, lng };
                 setResultsContent(parsedResult, true);
+                if (shouldRecordHistory) {
+                    addPlotToHistory(lat, lng, plotDetailsFromXML(text));
+                }
             } catch (error) {
                 console.error('Error:', error);
                 if (currentPolygon) {
@@ -941,6 +1217,8 @@
         });
 
         map.on('click', handleCoords);
+
+        renderPlotHistory();
 
         const urlParams = new URLSearchParams(window.location.search);
         const id = urlParams.get('id');
